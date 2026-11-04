@@ -1,9 +1,19 @@
 #include "mainwindowex3.h"
 #include "ui_mainwindowex3.h"
 
+#include <unistd.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <cstdlib>
+
 MainWindowEx3::MainWindowEx3(QWidget *parent):QMainWindow(parent),ui(new Ui::MainWindowEx3)
 {
     ui->setupUi(this);
+
+    // Redirection de stderr vers Trace.log (les fils heritent de cette redirection)
+    int fd = open("Trace.log", O_WRONLY | O_CREAT | O_APPEND, 0644);
+    dup2(fd, 2);
+    ::close(fd);
 }
 
 MainWindowEx3::~MainWindowEx3()
@@ -137,18 +147,78 @@ const char* MainWindowEx3::getGroupe3()
 void MainWindowEx3::on_pushButtonLancerRecherche_clicked()
 {
   fprintf(stderr,"Clic sur le bouton Lancer Recherche\n");
-  // TO DO
   int idFils1,idFils2,idFils3;
+
+  if (recherche1Selectionnee())
+  {
+    idFils1 = fork();
+    if (idFils1 == 0)
+    {
+      execl("./Lecture", "Lecture", getGroupe1(), NULL);
+      exit(1);
+    }
+  }
+
+  if (recherche2Selectionnee())
+  {
+    idFils2 = fork();
+    if (idFils2 == 0)
+    {
+      execl("./Lecture", "Lecture", getGroupe2(), NULL);
+      exit(1);
+    }
+  }
+
+  if (recherche3Selectionnee())
+  {
+    idFils3 = fork();
+    if (idFils3 == 0)
+    {
+      execl("./Lecture", "Lecture", getGroupe3(), NULL);
+      exit(1);
+    }
+  }
+
+  int status;
+
+  if (recherche1Selectionnee())
+  {
+    fprintf(stderr,"(UNIX_EXERCICE3) Avant wait...\n");
+    waitpid(idFils1, &status, 0);
+    fprintf(stderr,"(UNIX_EXERCICE3) Apres wait...\n");
+    setResultat1(WEXITSTATUS(status));
+  }
+
+  if (recherche2Selectionnee())
+  {
+    fprintf(stderr,"(UNIX_EXERCICE3) Avant wait...\n");
+    waitpid(idFils2, &status, 0);
+    fprintf(stderr,"(UNIX_EXERCICE3) Apres wait...\n");
+    setResultat2(WEXITSTATUS(status));
+  }
+
+  if (recherche3Selectionnee())
+  {
+    fprintf(stderr,"(UNIX_EXERCICE3) Avant wait...\n");
+    waitpid(idFils3, &status, 0);
+    fprintf(stderr,"(UNIX_EXERCICE3) Apres wait...\n");
+    setResultat3(WEXITSTATUS(status));
+  }
 }
 
 void MainWindowEx3::on_pushButtonVider_clicked()
 {
   fprintf(stderr,"Clic sur le bouton Vider\n");
-  // TO DO
+  setGroupe1("");
+  setGroupe2("");
+  setGroupe3("");
+  ui->lineEditResultat1->clear();
+  ui->lineEditResultat2->clear();
+  ui->lineEditResultat3->clear();
 }
 
 void MainWindowEx3::on_pushButtonQuitter_clicked()
 {
   fprintf(stderr,"Clic sur le bouton Quitter\n");
-  // TO DO
+  close();
 }
